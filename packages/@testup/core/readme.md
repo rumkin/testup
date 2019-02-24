@@ -4,10 +4,18 @@ TestUp is a test runner library. It contains two abstractions Runner
 and Reporter. This abstractions describes how to run tests and how to receive
 a report.
 
+## Install
+
+```
+npm i @testup/core
+```
+
 ## Usage
 
 ```js
-import run from '@testup/core';
+import should from 'should';
+
+import {runScript} from '@testup/core';
 import ConsoleReporter from '@testup/console-reporter';
 
 const reporter = new ConsoleReporter(console);
@@ -18,19 +26,39 @@ const script = ({it}) => {
   });
 };
 
-run(script, {reporter});
+run({
+  script,
+  reporter,
+})
+.then((suite) => {
+  if (! suite.isComplete) {
+    // Test couldn't finish its work.
+  }
+  else if (suite.isOk) {
+    // All tests are passed.
+  }
+  else {
+    // Some tests are failed.
+  }
+});
 ```
 
 ## API
 
-## `Run()`
+## `runScript()`
 
 Executes test script.
 
 ```
-(script: Script, {context: Object, reporter: Reporter}) -> Promise<Report,Error>
+({
+  script: script,
+  context: Object,
+  reporter: Reporter,
+  root: Suite,
+}) -> Promise<Report,Error>
 ```
-### `Script()`
+
+### `script()`
 
 Script is a function which produce test script using Handles.
 ```
@@ -39,21 +67,20 @@ Script is a function which produce test script using Handles.
 
 ## `Handles{}`
 
-Handles is set methods that are using to describe test script.
+Handles is set of methods that are using to describe test script.
 
 ```
 {
   describe: (title: String, fn: (test: Handles) -> void),
-  it: (title: String, [...wrappers: Wrapper,], fn: TestCase ) -> void,
-  use: (Wrapper) -> void,
-  define: ((context: Object) -> Object) -> void,
-  within: ((context: Object, next: TestCase) -> Promise<() -> void,Error>) -> void,
+  it: (title: String, [...wrappers: wrapper,] fn: testCase ) -> void,
+  use: (wrapper) -> void,
+  each: (...wrappers: wrapper, fn:Function) -> void,
 }
 ```
 
-### `TestCase()`
+### `testCase()`
 ```
-(context: Object) -> Promise<void,Error>
+(context: Object) -> void|Promise<void,Error>
 ```
 
 Test case is a minimal unit of test script. It runs some code which should pass
@@ -68,17 +95,17 @@ it('42 is 42', () => {
 
 Context usage example:
 ```js
-it('User exists', ({db}) => {
+it('User exists', async ({db}) => {
   const user = await db.findOne('users', {id: 1});
 
   assert.ok(user !== null, 'User exists');
 });
 ```
 
-### `Wrapper()`
+### `wrapper()`
 
 ```
-(context: Object, next: TestCase) -> Promise<void, Error>
+(context: Object, next: testCase) -> void|Promise<void, Error>
 ```
 
 #### Example
@@ -87,8 +114,8 @@ This example shows how to wrap followed calls to test DB. It initiates and
 destroys DB connection immediately after all tests complete.
 
 ```js
-describe('Db', (test) => {
-  test.use((context, next) => {
+describe('Db', ({use}) => {
+  use((context, next) => {
     // Initiate connection
     const db = await Db.connect();
     try {
@@ -99,17 +126,36 @@ describe('Db', (test) => {
       });
     }
     finally {
-      // Destroy connection anyway.
+      // Destroy connection when all tests are finished.
       db.disconnect();
     }
+  });
+
+  // Drop database after test case is finished
+  async function rollback({db}, next) {
+    try {
+      await next();
+    }
+    finally {
+      await db.dropDatabase();
+    }
+  }
+
+  it('Test document creation', rollback, async ({db}) => {
+    await db.getRepo('users').create({
+      username: 'user',
+    });
+
+    const user = await db.getRepo('users')
+    .findOne({
+      username: 'user',
+    });
+
+    assert(user !== null, 'user created');
   });
 });
 ```
 
 ## License
 
-MIT.
-
-## Copyright
-
-© Rumkin, 2018.
+MIT © [Rumkin](https://rumk.in)

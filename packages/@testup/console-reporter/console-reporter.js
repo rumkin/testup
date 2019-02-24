@@ -1,38 +1,72 @@
 class ConsoleReporter {
-  startSection(section) {
-    console.log('Section start:\n' + section.title);
-  }
-  endSection() {
-    console.log('Section end');
-  }
-
-  startCase(tcase) {
-    console.log('Start case\n', tcase.title + ':');
-  }
-
-  endCase(tcase) {
-    console.log('Case end', tcase.hasPass);
+  constructor({
+    indent = '  ',
+    successMark = '✓',
+    failureMark = '✖',
+  } = {}) {
+    this.indent = indent;
+    this.successMark = successMark;
+    this.failureMark = failureMark;
+    this.failedCases = [];
   }
 
-  startWrapper() {
-    console.log('Wrapper start');
+  startSuite(unit) {
+    if (unit.isRoot) {
+      return;
+    }
+
+    const indent = this.indent.repeat(unit.depth - 1);
+
+    console.log('%s%s %s', indent, '§', unit.label);
   }
 
-  endWrapper() {
-    console.log('Wrapper end');
+  endSuite({isRoot}) {
+    if (! isRoot) {
+      return;
+    }
+
+    this.failedCases.forEach((unit, i) => {
+      const parents = unit.parents.slice(0, -1)
+      .map(({label}) => label)
+      .join(' < ');
+
+      console.log('');
+      console.log('%s) %s < %s', i + 1, unit.label, parents);
+      console.log('%s', this.errorToString(unit.error));
+    });
   }
 
-  reportBrokenUnit(item) {
-    console.log(item);
-    console.error('Broken unit error', item.error);
+  errorToString(err) {
+    const prefix = err.name + ': ' + err.message;
+    if (err.stack.startsWith(prefix)) {
+      return err.message + '\n' + err.stack.slice(prefix.length + 1);
+    }
+    else {
+      return err.message + '\n' + err.stack;
+    }
+  }
+
+  startCase() {}
+
+  endCase(unit) {
+    const indent = this.indent.repeat(unit.depth - 1);
+    const mark = unit.isOk ? this.successMark : this.failureMark;
+    if (! unit.isOk) {
+      this.failedCases.push(unit);
+    }
+    console.log('%s%s %s', indent, mark, unit.label);
+  }
+
+  reportBrokenUnit(unit, error) {
+    console.error('Invalid unit %s:', unit.label, error);
   }
 
   reportBrokenScript(error) {
-    console.error('Script is broken', error);
+    console.error('Invalid test script:', error);
   }
 
   reportError(error) {
-    console.error('Fatal error', error);
+    console.error('Unknown error:', error);
   }
 }
 

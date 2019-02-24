@@ -1,3 +1,10 @@
+# Abstract Reporter
+
+Abstract reporter is interface for other reporters.
+
+## Source
+
+```js
 class BaseReporter {
   startSuite() {}
   endSuite() {}
@@ -7,5 +14,8 @@ class BaseReporter {
   reportBrokenUnit() {}
   reportBrokenScript() {}
 }
+```
 
-module.exports = BaseReporter;
+## License
+
+MIT © [Rumkin](https://rumk.in)

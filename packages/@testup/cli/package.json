@@ -1,12 +1,11 @@
 {
-  "main": "tap-reporter.js",
-  "dependencies": {
-    "chalk": "^2.4.1"
-  },
-  "name": "@testup/tap-reporter",
+  "name": "@testup/cli",
   "version": "0.1.0",
-  "description": "TestUp TAP (Test Anything Protocol) reporter",
-  "devDependencies": {},
+  "description": "CLI for running testup tests",
+  "main": "main.js",
+  "bin": {
+    "testup": "bin.js"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -15,15 +14,20 @@
     "url": "git+https://github.com/rumkin/testup.git"
   },
   "keywords": [
-    "testup",
-    "tests",
-    "reporter",
-    "tap-reporter"
+    "test",
+    "tdd",
+    "bin",
+    "cli",
+    "util"
   ],
   "author": "Rumkin <dev@rumk.in> (https://rumk.in/)",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/rumkin/testup/issues"
   },
-  "homepage": "https://github.com/rumkin/testup#readme"
+  "homepage": "https://github.com/rumkin/testup#readme",
+  "dependencies": {
+    "coa": "^2.0.2"
+  },
+  "devDependencies": {}
 }

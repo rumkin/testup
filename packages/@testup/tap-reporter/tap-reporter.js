@@ -2,11 +2,11 @@ const path = require('path');
 
 const chalk = require('chalk');
 
-const BaseReporter = require('./base-reporter');
+// const BaseReporter = require('./base-reporter');
 
-class TapReporter extends BaseReporter {
+class TapReporter {
   constructor({dir, lineLength, output = console.log}) {
-    super();
+    // super();
 
     this.dir = dir;
     this.lineLength = lineLength;
@@ -14,21 +14,23 @@ class TapReporter extends BaseReporter {
     this.output = output;
   }
 
-  endCase(item) {
+  startCase() {}
+
+  endCase(unit) {
     const prefix = '  ';
-    const {number} = item;
+    const {index} = unit;
 
     let status;
-    let title = (item.title || item.type);
-    let parent = chalk.gray('# ' + item.path.join(' :: '));
+    let label = (unit.label || unit.type);
+    let parent = chalk.gray('# ' + unit.path.join(' :: '));
     let msg;
 
-    if (item.error) {
-      const {error} = item;
+    if (unit.error) {
+      const {error} = unit;
       status = chalk.bold.red('not ok');
 
       if (error.assertion) {
-        const location = getErrorLocation(error);
+        const location = getErrorLocation(error, this.dir);
         msg = toYamlLike({
           message: error.message,
           operator: error.assertion.params.operator,
@@ -44,27 +46,40 @@ class TapReporter extends BaseReporter {
         }, {dir: this.dir});
       }
     }
-    else if (item.type === 'case') {
+    else if (unit.type === 'case') {
       status = chalk.bold.green('ok');
     }
     else {
       return;
     }
 
+    const lineLength = (i) => i > 0
+      ? this.lineLength - prefix.length
+      : this.lineLength;
+
+    const prefixLine = (line, i) => i > 0
+      ? `${prefix}${line}`
+      : line;
+
     this.output(
-      wordWrap(parent, this.lineLength, prefix, 1)
+      wordWrap(parent, lineLength, prefixLine)
     );
     this.output(
-      wordWrap(`${status} ${number} - ${title}`, this.lineLength, prefix, 1)
+      wordWrap(
+        `${status} ${index} - ${label}`,
+        lineLength,
+        prefixLine,
+      )
     );
+
     if (msg) {
       this.output(
-        wordWrap(`---\n${msg}\n...`, this.lineLength, prefix)
+        wordWrap(`---\n${msg}\n...`, this.lineLength)
       );
     }
   }
 
-  startSection(section) {
+  startSuite(section) {
     if (! section.isRoot) {
       return;
     }
@@ -74,7 +89,7 @@ class TapReporter extends BaseReporter {
     this.output(Math.min(1, total) + '..' + total + '\n');
   }
 
-  endSection({isRoot, total, passed}) {
+  endSuite({isRoot, total, passed}) {
     if (! isRoot) {
       return;
     }
@@ -91,11 +106,11 @@ class TapReporter extends BaseReporter {
     this.output('# rate: ' + chalk.bold((rate * 100).toFixed(2)) + '%');
   }
 
-  reportBrokenUnit(item) {
-    let msg = 'Bail out!';
-    msg += ' ' + (item.title || item.type) + ' at ' + item.path.join(' / ') + '\n';
-    if (item.error) {
-      msg += item.error.stack;
+  reportBrokenUnit(unit, error) {
+    let msg = 'Bail out! Unit error:\n';
+    msg += ' ' + (unit.label || unit.type) + ' at ' + unit.path.join(' / ') + '\n';
+    if (error) {
+      msg += error.stack;
     }
     this.output('\n' + msg);
   }
@@ -108,13 +123,13 @@ class TapReporter extends BaseReporter {
 
   reportError(error) {
     this.output(
-      'Bail out! ' + error.message + error.stack.replace(error.message, '')
+      'Bail out! Unexpected error:\n' + error.message + error.stack.replace(error.message, '')
     );
   }
 }
 
 // Wordwrap output
-function cutline(text, length) {
+function getLine(text, length) {
   const line = text.slice(0, length);
   const rn = line.match(/\r|\r?\n/);
   if (rn) {
@@ -130,21 +145,19 @@ function cutline(text, length) {
   return line;
 }
 
-function wordWrap(text, length, prefix, skip = 0) {
-  const indent = prefix.length;
+function wordWrap(text, length, map = (v) => v) {
   const out = [];
+  const getLength = typeof length === 'number' ? () => length : length;
 
   while (text.length) {
-    let maxLength = skip > 0 ? length : length - indent;
-    let linePrefix = skip > 0 ? '' : prefix;
-
-    let line = cutline(text, maxLength);
+    const maxLength = getLength(out.length);
+    let line = getLine(text, maxLength);
 
     text = text.slice(line.length);
-    out.push(linePrefix + line.trimEnd());
+    out.push(line);
   }
 
-  return out.join('\n');
+  return out.map(map).join('\n');
 }
 
 // Yaml output
@@ -201,24 +214,26 @@ function toYamlLike(values, {indent = 0, dir} = {}) {
   }
   return out.join('\n');
 }
-function getErrorLocation(error) {
+function getErrorLocation(error, dir) {
   const origin = Error.prepareStackTrace;
-  Error.prepareStackTrace = getLocationTrace;
+  Error.prepareStackTrace = getLocationTrace(dir);
   error.stack;
   Error.prepareStackTrace = origin;
   return error.location || error.stack.replace(error.message, '');
 }
 
-function getLocationTrace(error, trace) {
-  const string = prepareStackTrace(error, trace);
+function getLocationTrace(dir) {
+  return (error, trace) => {
+    const string = prepareStackTrace(error, trace);
 
-  const location = [...trace.map((item) => {
-    const filename = path.relative(cwd, item.getFileName() || '.');
-    const line = `${filename}:${item.getLineNumber()}:${item.getColumnNumber()}`;
-    return line;
-  })];
-  error.location = location;
-  return string;
+    const location = [...trace.map((item) => {
+      const filename = path.relative(dir, item.getFileName() || '.');
+      const line = `${filename}:${item.getLineNumber()}:${item.getColumnNumber()}`;
+      return line;
+    })];
+    error.location = location;
+    return string;
+  };
 }
 
 function prepareStackTrace(error, stack) {
@@ -231,11 +246,11 @@ function prepareStackTrace(error, stack) {
     typeLength = (frame.getTypeName() !== null && frame.getTypeName() !== '[object global]') ? frame.getTypeName().length : 0;
     typeLength = typeLength.length > 50 ? 50 : typeLength;
 
-    functionlength = frame.getFunctionName() !== null ? frame.getFunctionName().length : '<anonymous>'.length;
-    functionlength = functionlength > 50 ? 50 : functionlength;
+    let funcLength = frame.getFunctionName() !== null ? frame.getFunctionName().length : '<anonymous>'.length;
+    funcLength = funcLength > 50 ? 50 : funcLength;
 
-    if (typeLength + functionlength > maxWidth) {
-      maxWidth = typeLength + functionlength;
+    if (typeLength + funcLength > maxWidth) {
+      maxWidth = typeLength + funcLength;
     }
   }
 
