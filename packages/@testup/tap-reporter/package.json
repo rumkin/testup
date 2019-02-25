@@ -25,5 +25,5 @@
   "bugs": {
     "url": "https://github.com/rumkin/testup/issues"
   },
-  "homepage": "https://github.com/rumkin/testup#readme"
+  "homepage": "https://github.com/rumkin/testup/tree/master/packages/@testup/tap-reporter#readme"
 }

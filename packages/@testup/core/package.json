@@ -1,7 +1,7 @@
 {
   "main": "testup.js",
   "name": "@testup/core",
-  "description": "TestUp is a test runner library. It contains two abstractions Runner and Reporter. This abstractions describes how to run tests and how to receive a report.",
+  "description": "TestUp test running tools core",
   "version": "0.1.0",
   "scripts": {
     "test": "node test.js"
@@ -12,6 +12,7 @@
   },
   "keywords": [
     "test",
+    "tests",
     "tdd"
   ],
   "author": "Rumkin <dev@rumk.in> (https://rumk.in/)",
@@ -19,5 +20,5 @@
   "bugs": {
     "url": "https://github.com/rumkin/testup/issues"
   },
-  "homepage": "https://github.com/rumkin/testup#readme"
+  "homepage": "https://github.com/rumkin/testup/tree/master/packages/core#readme"
 }

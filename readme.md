@@ -6,7 +6,7 @@ to make tests simple, clear and reusable.
 ## Install
 
 ```
-npm i testup @testup/core @testup/console-reporter
+npm i @testup/cli @testup/core @testup/console-reporter
 ```
 
 ## Usage
@@ -40,11 +40,18 @@ module.exports = ({describe, it}) => {
 };
 ```
 
-### API
+## Packages
+
+* [`@testup/core`](packages/@testup/core) – TestUp Core.
+* [`@testup/cli`](packages/@testup/cli) – TestUp Cli running tool.
+* [`@testup/console-reporter`](packages/@testup/console-reporter) – Unified console test reporter.
+* [`@testup/tap-reporter`](packages/@testup/tap-reporter) – TAP reporter.
+
+## API
 
 ### `describe()`
 ```
-(label:String, ...modifiers:modifier, handler: script) -> void
+(label:String, ...modifiers:modifier, handler:script) -> void
 ```
 
 This method allow to group tests.
@@ -61,7 +68,7 @@ describe('Array', () => {
 
 ### `it()`
 ```
-(label:String, ...modifiers:modifier, test: test) -> void
+(label:String, ...modifiers:modifier, test:test) -> void
 ```
 
 Specify single test unit.
@@ -110,7 +117,7 @@ describe('database', () => {
 ### `each()`
 
 ```
-(...modifiers: modifier, handler: script) -> void
+(...modifiers:modifier, handler:script) -> void
 ```
 
 Define modifiers for descendant test units, groups and tests. Wrappers will be

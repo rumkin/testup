@@ -61,6 +61,18 @@ function testsTotal(total) {
   };
 }
 
+function testsPassed(passed) {
+  return function({suite}) {
+    assert.equal(suite.passed, passed, 'Tests passed');
+  };
+}
+
+function testsFailed(failed) {
+  return function({suite}) {
+    assert.equal(suite.failed, failed, 'Tests failed');
+  };
+}
+
 function hasNoErrors({reporter}) {
   assert.equal(reporter.errors.length, 0, 'Reporter has no internal errors');
 }
@@ -117,6 +129,8 @@ async function runTests() {
     shouldBeCompleted,
     shouldBeOk,
     testsTotal(1),
+    testsPassed(1),
+    testsFailed(0),
   ));
 
   await testScript(({describe, it}) => {
@@ -133,6 +147,8 @@ async function runTests() {
     shouldBeCompleted,
     shouldBeOk,
     testsTotal(1),
+    testsPassed(1),
+    testsFailed(0),
   ));
 
   await testScript(({describe, use, it}) => {
@@ -151,6 +167,8 @@ async function runTests() {
     shouldBeOk,
     hasNoAnyErrors,
     testsTotal(1),
+    testsPassed(1),
+    testsFailed(0),
   ));
 
   await testScript(({describe, each, it}) => {
@@ -176,6 +194,8 @@ async function runTests() {
     shouldBeOk,
     hasNoAnyErrors,
     testsTotal(2),
+    testsPassed(2),
+    testsFailed(0),
   ));
 
   await testScript(({it}) => {
@@ -191,6 +211,8 @@ async function runTests() {
       ([error]) => assert.ok(/Context.*Object/.test(error.message))
     ),
     testsTotal(1),
+    testsPassed(0),
+    testsFailed(0),
   ));
 
   await testScript(({it}) => {
@@ -204,6 +226,8 @@ async function runTests() {
     hasNoScriptErrors,
     onUnitErrors(([error]) => assert.equal(error.message, 'test')),
     testsTotal(1),
+    testsPassed(0),
+    testsFailed(0),
   ));
 
   await testScript(() => {
@@ -215,6 +239,8 @@ async function runTests() {
     hasNoUnitErrors,
     onScriptErrors(([error]) => assert.equal(error.message, 'test')),
     testsTotal(0),
+    testsPassed(0),
+    testsFailed(0),
   ));
 
   await testScript(({describe}) => {
@@ -228,6 +254,8 @@ async function runTests() {
       ([error]) => assert.ok(/Handler.*function/.test(error.message))
     ),
     testsTotal(0),
+    testsPassed(0),
+    testsFailed(0),
   ));
 
   // Internal errors should be ejected

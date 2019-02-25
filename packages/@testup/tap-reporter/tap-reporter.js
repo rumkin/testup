@@ -2,11 +2,42 @@ const path = require('path');
 
 const chalk = require('chalk');
 
-// const BaseReporter = require('./base-reporter');
+const createToken = (type) => (value) => ({type, value});
+const t = {
+  info: createToken('info'),
+  error: createToken('error'),
+  comment: createToken('comment'),
+  text: createToken('text'),
+};
+const tt = function(segments, ...values) {
+  const out = new Array(segments.length + values.length);
+  out[0] = t.text(segments[0]);
+  for (let i = 1; i < segments.length; i++) {
+    const value = values[i];
+    const segment = segments[i];
+
+    if (typeof value === 'object') {
+      out.push(value);
+      if (segment.length) {
+        out.push(t.text(segment));
+      }
+    }
+    else if (value.length + segment.length > 0) {
+      out.push(t.text(value + segment));
+    }
+  }
+  return out;
+};
 
 class TapReporter {
-  constructor({dir, lineLength, output = console.log}) {
-    // super();
+  constructor({
+    dir,
+    lineLength,
+    output,
+  } = {}) {
+    if (! output) {
+      throw new Error('Output not provided');
+    }
 
     this.dir = dir;
     this.lineLength = lineLength;
@@ -14,20 +45,22 @@ class TapReporter {
     this.output = output;
   }
 
+  write(...tokens) {
+    for (const token of tokens) {
+      this.output.write(token);
+    }
+  }
+
   startCase() {}
 
   endCase(unit) {
-    const prefix = '  ';
     const {index} = unit;
 
-    let status;
     let label = (unit.label || unit.type);
-    let parent = chalk.gray('# ' + unit.path.join(' :: '));
     let msg;
 
     if (unit.error) {
       const {error} = unit;
-      status = chalk.bold.red('not ok');
 
       if (error.assertion) {
         const location = getErrorLocation(error, this.dir);
@@ -46,36 +79,23 @@ class TapReporter {
         }, {dir: this.dir});
       }
     }
-    else if (unit.type === 'case') {
-      status = chalk.bold.green('ok');
-    }
-    else {
-      return;
-    }
 
-    const lineLength = (i) => i > 0
-      ? this.lineLength - prefix.length
-      : this.lineLength;
-
-    const prefixLine = (line, i) => i > 0
-      ? `${prefix}${line}`
-      : line;
-
-    this.output(
-      wordWrap(parent, lineLength, prefixLine)
-    );
-    this.output(
-      wordWrap(
-        `${status} ${index} - ${label}`,
-        lineLength,
-        prefixLine,
-      )
+    // const prefix = '  ';
+    // const lineLength = (i) => i > 0
+    //   ? this.lineLength - prefix.length
+    //   : this.lineLength;
+    //
+    // const prefixLine = (line, i) => i > 0
+    //   ? `${prefix}${line}`
+    //   : line;
+    const status = unit.error ? t.error('ok') : t.success('not ok');
+    this.write(
+      t.comment(unit.path.join(' : ') + '\n'),
+      ...tt`${status} ${index} - ${label}\n`,
     );
 
     if (msg) {
-      this.output(
-        wordWrap(`---\n${msg}\n...`, this.lineLength)
-      );
+      this.write(t.text('---\n'), ...msg, t.text('\n...\n'));
     }
   }
 
@@ -83,10 +103,12 @@ class TapReporter {
     if (! section.isRoot) {
       return;
     }
-    const {total} = section;
+    const start = Math.min(1, this.total);
+    const end = section.total;
 
-    this.output('TAP version 13');
-    this.output(Math.min(1, total) + '..' + total + '\n');
+    this.write(
+      t.info(`TAP version 13\n${start}..${end}\n`)
+    );
   }
 
   endSuite({isRoot, total, passed}) {
@@ -128,21 +150,16 @@ class TapReporter {
   }
 }
 
-// Wordwrap output
-function getLine(text, length) {
-  const line = text.slice(0, length);
-  const rn = line.match(/\r|\r?\n/);
-  if (rn) {
-    return line.slice(0, rn.index + rn[0].length);
-  }
-  else if (line.length === length) {
-    const space = line.match(/\s+(?=\S*$)/);
-    if (space) {
-      return line.slice(0, space.index + 1);
+function getNewlineIndex(text, length) {
+  for (let i = 0; i < length; i++) {
+    const char = text[i];
+
+    if (char === '\n') {
+      return i;
     }
   }
 
-  return line;
+  return -1;
 }
 
 function wordWrap(text, length, map = (v) => v) {
@@ -151,10 +168,18 @@ function wordWrap(text, length, map = (v) => v) {
 
   while (text.length) {
     const maxLength = getLength(out.length);
-    let line = getLine(text, maxLength);
+    let lineEnd = getNewlineIndex(text, maxLength);
+    let line;
+    if (lineEnd < 0) {
+      line = text.slice(0, maxLength);
+      text = '';
+    }
+    else {
+      line = text.slice(0, lineEnd);
+      text = text.slice(lineEnd + 1);
+    }
 
-    text = text.slice(line.length);
-    out.push(line);
+    out.push(line.trimEnd());
   }
 
   return out.map(map).join('\n');

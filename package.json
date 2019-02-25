@@ -1,5 +1,7 @@
 {
   "devDependencies": {
+    "chalk": "^2.4.2",
     "should": "^13.2.3"
-  }
+  },
+  "private": true
 }

@@ -81,15 +81,6 @@ async function testAction(opts) {
 
   const {dir, files} = opts;
 
-  const [file] = files;
-
-  if (! file) {
-    throw new CmdError('Test file not specified');
-  }
-  else if (! await exists(file)) {
-    throw new CmdError('Test file not found');
-  }
-
   let config = {};
   if (opts.config) {
     if (! await exists(opts.config)) {
@@ -110,28 +101,31 @@ async function testAction(opts) {
     config,
   );
 
-  const script = require(path.resolve(file));
-
-  if (typeof script !== 'function') {
-    throw CmdError(`Test "${file}" exports no function`);
-  }
-
   const suite = new Suite();
 
-  return runScript({
-    script,
-    reporter,
-    suite,
-    reportErrors: true,
-  })
-  .then(() => {
-    if (! suite.isCompleted || ! suite.isOk) {
-      return FAIL;
+  for (const file of files) {
+    if (! file) {
+      throw new CmdError('Test file not specified');
     }
-    else {
-      return OK;
+    else if (! await exists(file)) {
+      throw new CmdError('Test file not found');
     }
-  });
+
+    const script = require(path.resolve(file));
+
+    if (typeof script !== 'function') {
+      throw CmdError(`Test "${file}" exports no function`);
+    }
+
+    await runScript({
+      script,
+      reporter,
+      suite,
+      reportErrors: true,
+    });
+  }
+
+  return suite.isOk ? OK : FAIL;
 }
 
 module.exports = testAction;
