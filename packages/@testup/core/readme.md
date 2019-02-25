@@ -31,21 +31,18 @@ run({
   reporter,
 })
 .then((suite) => {
-  if (! suite.isComplete) {
-    // Test couldn't finish its work.
-  }
-  else if (suite.isOk) {
-    // All tests are passed.
+  if (suite.isOk) {
+    // All tests are completed and passed.
   }
   else {
-    // Some tests are failed.
+    // Some tests are failed or test isn't completed.
   }
 });
 ```
 
 ## API
 
-## `runScript()`
+### `runScript()`
 
 Executes test script.
 
@@ -65,7 +62,7 @@ Script is a function which produce test script using Handles.
 (handles: Handles) -> void
 ```
 
-## `Handles{}`
+### `Handles{}`
 
 Handles is set of methods that are using to describe test script.
 

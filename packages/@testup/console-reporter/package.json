@@ -1,7 +1,7 @@
 {
   "main": "console-reporter.js",
   "name": "@testup/console-reporter",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "TestUp reporter for shell and browser console",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -21,5 +21,5 @@
   "bugs": {
     "url": "https://github.com/rumkin/testup/issues"
   },
-  "homepage": "https://github.com/rumkin/testup/tree/master/packages/console-reporter#readme"
+  "homepage": "https://github.com/rumkin/testup/tree/master/packages/@testup/console-reporter#readme"
 }

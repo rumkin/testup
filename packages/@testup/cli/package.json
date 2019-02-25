@@ -25,7 +25,7 @@
   "bugs": {
     "url": "https://github.com/rumkin/testup/issues"
   },
-  "homepage": "https://github.com/rumkin/testup/tree/master/packages/cli#readme",
+  "homepage": "https://github.com/rumkin/testup/tree/master/packages/@testup/cli#readme",
   "dependencies": {
     "coa": "^2.0.2"
   },
