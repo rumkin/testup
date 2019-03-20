@@ -16,7 +16,7 @@ Add npm script:
 ```json
 {
   "scripts": {
-    "test": "testup -r console test/module.spec.js"
+    "test": "testup run -r console test/module.spec.js"
   }
 }
 ```

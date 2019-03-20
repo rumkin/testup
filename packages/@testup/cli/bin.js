@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 const coa = require('coa');
 
 const cmd = coa.Cmd()
@@ -6,7 +8,7 @@ const cmd = coa.Cmd()
 .helpful();
 
 const commands = {
-  test: './commands/test',
+  run: './commands/run',
 };
 
 for (const [name, filepath] of Object.entries(commands)) {

@@ -101,9 +101,14 @@ async function testAction(opts) {
     config,
   );
 
-  const suite = new Suite();
+  const suites = [];
 
   for (const file of files) {
+    const suite = new Suite({
+      label: `File: ${file}`,
+    });
+    suites.push(suite);
+
     if (! file) {
       throw new CmdError('Test file not specified');
     }
@@ -125,7 +130,7 @@ async function testAction(opts) {
     });
   }
 
-  return suite.isOk ? OK : FAIL;
+  return suites.some((suite) => !suite.isOk) ? FAIL : OK;
 }
 
 module.exports = testAction;

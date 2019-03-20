@@ -1,21 +1,27 @@
 class ConsoleReporter {
   constructor({
     indent = '  ',
+    initialIndent = '',
+    startDepth = 0,
     successMark = '✓',
     failureMark = '✖',
   } = {}) {
     this.indent = indent;
+    this.initialIndent = initialIndent;
+    this.startDepth = startDepth;
     this.successMark = successMark;
     this.failureMark = failureMark;
     this.failedCases = [];
   }
 
   startSuite(unit) {
-    if (unit.isRoot) {
+    if (unit.depth < this.startDepth) {
       return;
     }
 
-    const indent = this.indent.repeat(unit.depth - 1);
+    const indent = this.initialIndent + this.indent.repeat(
+      unit.depth - this.startDepth
+    );
 
     console.log('%s%s %s', indent, '§', unit.label);
   }

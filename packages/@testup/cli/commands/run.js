@@ -29,7 +29,7 @@ module.exports = function (cmd) {
   .long('package');
 
   cmd.act(command((opts, args) => {
-    const runAction = require('../actions/test');
+    const runAction = require('../actions/run');
 
     return runAction({
       ...opts,

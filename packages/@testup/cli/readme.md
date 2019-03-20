@@ -32,7 +32,7 @@ Create `.testuprc` file:
 Add npm script:
 ```json
 {
-  "scripts": "testup -r console test.spec.js"
+  "scripts": "testup run -r console test.spec.js"
 }
 ```
 
