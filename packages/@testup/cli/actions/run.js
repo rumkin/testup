@@ -116,7 +116,11 @@ async function testAction(opts) {
       throw new CmdError('Test file not found');
     }
 
-    const script = require(path.resolve(file));
+    let script = require(path.resolve(file));
+
+    if (typeof script === 'object' && typeof script.default === 'function') {
+      script = script.default;
+    }
 
     if (typeof script !== 'function') {
       throw new CmdError(`Test "${file}" exports no function`);
