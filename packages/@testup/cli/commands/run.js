@@ -5,28 +5,28 @@ module.exports = function (cmd) {
   cmd.helpful();
 
   cmd.opt()
-  .name('reporter')
-  .title('Define reporter module')
-  .short('r')
-  .long('reporter');
-
-  cmd.opt()
   .name('config')
   .title('Testup config file')
   .short('c')
   .long('config');
-
-  cmd.arg()
-  .name('files')
-  .title('Test files to run')
-  .req()
-  .arr();
 
   cmd.opt()
   .name('package')
   .title('TestUp core package path')
   .short('p')
   .long('package');
+
+  cmd.opt()
+  .name('reporter')
+  .title('Define reporter module')
+  .short('r')
+  .long('reporter');
+
+  cmd.arg()
+  .name('files')
+  .title('Test files to run')
+  .req()
+  .arr();
 
   cmd.act(command((opts, args) => {
     const runAction = require('../actions/run');

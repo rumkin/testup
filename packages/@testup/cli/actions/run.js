@@ -119,7 +119,7 @@ async function testAction(opts) {
     const script = require(path.resolve(file));
 
     if (typeof script !== 'function') {
-      throw CmdError(`Test "${file}" exports no function`);
+      throw new CmdError(`Test "${file}" exports no function`);
     }
 
     await runScript({
