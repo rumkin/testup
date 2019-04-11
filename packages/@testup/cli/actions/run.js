@@ -95,15 +95,15 @@ async function testAction(opts) {
     }
   }
 
-  const reporter = await loadReporter(
-    opts.reporter || config.reporter,
-    opts,
-    config,
-  );
-
   const suites = [];
 
   for (const file of files) {
+    const reporter = await loadReporter(
+      opts.reporter || config.reporter,
+      opts,
+      config,
+    );
+
     const suite = new Suite({
       label: `File: ${file}`,
     });
