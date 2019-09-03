@@ -2,7 +2,7 @@
   "main": "testup.js",
   "name": "@testup/core",
   "description": "TestUp test running tools core",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "scripts": {
     "test": "node test.spec.js"
   },

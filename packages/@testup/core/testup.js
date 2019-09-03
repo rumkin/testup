@@ -37,7 +37,7 @@
       await runSuite({
         stack,
         unit: suite,
-        context,
+        ctx: context,
         reporter,
       });
     }

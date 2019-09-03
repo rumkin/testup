@@ -6,7 +6,17 @@ const {
 
 // Util fnctions
 
-function testScript(script) {
+function testScript(...args) {
+  let script;
+  let context;
+  if (args.length > 1) {
+    context = args[0];
+    script = args[1];
+  }
+  else {
+    script = args[0];
+    context = {};
+  }
   const reporter = {
     unitErrors: [],
     scriptErrors: [],
@@ -29,6 +39,7 @@ function testScript(script) {
   return runScript({
     script,
     reporter,
+    context,
   })
   .then((suite) => ({suite, reporter}));
 }
@@ -195,6 +206,26 @@ async function runTests() {
     hasNoAnyErrors,
     testsTotal(2),
     testsPassed(2),
+    testsFailed(0),
+  ));
+
+  await testScript({n: 42}, ({describe, each, it}) => {
+    describe('Using root context', () => {
+      each(
+        () => {
+          it('Should be fine', ({n}) => {
+            assert.equal(n, 42, '42 equals 42');
+          });
+        }
+      );
+    });
+  })
+  .then(res => pipe(res,
+    shouldBeCompleted,
+    shouldBeOk,
+    hasNoAnyErrors,
+    testsTotal(1),
+    testsPassed(1),
     testsFailed(0),
   ));
 
