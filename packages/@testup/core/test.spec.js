@@ -268,7 +268,7 @@ async function runTests() {
     reporter: {},
   }));
 
-  console.log('Test passed');
+  console.log('All tests passed');
 }
 
 // Run test suite
