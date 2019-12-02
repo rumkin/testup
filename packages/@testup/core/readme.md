@@ -1,8 +1,8 @@
 # TestUp Core
 
-TestUp is a test runner library. It contains two abstractions Runner
-and Reporter. This abstractions describes how to run tests and how to receive
-a report.
+This is the core of TestUp test runner. It contains two main components Runner
+and Reporter. This abstractions describe how to run tests and how to present
+the result.
 
 ## Install
 
@@ -13,20 +13,21 @@ npm i @testup/core
 ## Usage
 
 ```js
-import should from 'should';
+import should from 'should'
 
-import {runScript} from '@testup/core';
-import ConsoleReporter from '@testup/console-reporter';
+import {runScript} from '@testup/core'
+import ConsoleReporter from '@testup/console-reporter'
 
-const reporter = new ConsoleReporter(console);
+const reporter = new ConsoleReporter(console)
 
 const script = ({it}) => {
-  it('Should be 42', () => {
-    should(42).be.equal('42');
-  });
-};
+  it('Should be 42', (test) => {
+    should(42).be.equal('42')
+    test.done()
+  })
+}
 
-run({
+runScript({
   script,
   reporter,
 })
@@ -37,7 +38,7 @@ run({
   else {
     // Some tests are failed or test isn't completed.
   }
-});
+})
 ```
 
 ## API
@@ -57,18 +58,18 @@ Executes test script.
 
 ### `script()`
 
-Script is a function which produce test script using Handles.
+Script is a function which produce test script using Handlers.
 ```
-(handles: Handles) -> void
+(handlers: Handlers) -> void
 ```
 
-### `Handles{}`
+### `Handlers{}`
 
-Handles is set of methods that are using to describe test script.
+Handlers object is a set of methods for describing the test script.
 
 ```
 {
-  describe: (title: String, fn: (test: Handles) -> void),
+  describe: (title: String, fn: (test: Handlers) -> void),
   it: (title: String, [...wrappers: wrapper,] fn: testCase ) -> void,
   use: (wrapper) -> void,
   each: (...wrappers: wrapper, fn:Function) -> void,
@@ -77,7 +78,7 @@ Handles is set of methods that are using to describe test script.
 
 ### `testCase()`
 ```
-(context: Object) -> void|Promise<void,Error>
+(test:Test, context: Object) -> void|Promise<void,Error>
 ```
 
 Test case is a minimal unit of test script. It runs some code which should pass
@@ -85,18 +86,48 @@ assertion.
 
 Simple assertion example:
 ```js
-it('42 is 42', () => {
-  assert.equal(42, '42');
-});
+it('42 is 42', (test) => {
+  assert.equal(42, '42')
+  test.done()
+})
 ```
 
 Context usage example:
 ```js
-it('User exists', async ({db}) => {
-  const user = await db.findOne('users', {id: 1});
+it('User exists', async (test, {db}) => {
+  const user = await db.findOne('users', {id: 1})
 
-  assert.ok(user !== null, 'User exists');
-});
+  assert.ok(user !== null, 'User exists')
+  test.done()
+})
+```
+
+### `Test{}`
+
+Test is testcase util it's using within a test to determine whether it has been
+ended or not, and provide utils, like timer delay.
+
+```
+{
+  delay: (timeout: number) -> Promise<void>,
+  done: () -> void,
+}
+```
+
+#### Example
+
+```js
+// Will throw due to timeout
+it('Test with delay', async (test) => {
+  await new Promise((resolve) => setTimeout(resolve, 2000))
+  test.done()
+})
+
+// Will pass due to delay is used
+it('Test with delay', async (test) => {
+  await test.delay(2000)
+  test.done()
+})
 ```
 
 ### `wrapper()`
@@ -114,43 +145,44 @@ destroys DB connection immediately after all tests complete.
 describe('Db', ({use}) => {
   use((context, next) => {
     // Initiate connection
-    const db = await Db.connect();
+    const db = await Db.connect()
     try {
       // Pass db within a context
       await next({
         ...context,
         db,
-      });
+      })
     }
     finally {
       // Destroy connection when all tests are finished.
-      db.disconnect();
+      db.disconnect()
     }
-  });
+  })
 
   // Drop database after test case is finished
   async function rollback({db}, next) {
     try {
-      await next();
+      await next()
     }
     finally {
-      await db.dropDatabase();
+      await db.dropDatabase()
     }
   }
 
-  it('Test document creation', rollback, async ({db}) => {
+  it('Test document creation', rollback, async (test, {db}) => {
     await db.getRepo('users').create({
       username: 'user',
-    });
+    })
 
     const user = await db.getRepo('users')
     .findOne({
       username: 'user',
-    });
+    })
 
-    assert(user !== null, 'user created');
-  });
-});
+    assert(user !== null, 'user created')
+    test.done()
+  })
+})
 ```
 
 ## License

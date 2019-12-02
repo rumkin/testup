@@ -1,76 +1,85 @@
 /* global window define */
 (function(mod) {
   if (typeof module === 'object' && typeof exports === 'object') {
-    mod(exports);
+    mod(exports)
   }
   else if (typeof define === 'function' && define.amd) {
     define([], function() {
-      const exports = {};
-      mod(exports);
-      return exports;
-    });
+      const exports = {}
+      mod(exports)
+      return exports
+    })
   }
   else {
-    mod(window.Testup = {});
+    mod(window.Testup = {})
   }
 })(function(exports){
+  const TIMEOUT = Symbol('TestUp:Timeout')
+
+  function createContext(source, {timeout = 2000} = {}) {
+    return Object.assign({}, source, {
+      [TIMEOUT]: timeout,
+    })
+  }
+
   async function runScript({
     script,
     context = {},
     reporter,
     suite = new Suite(),
     reportErrors = false,
+    timeout,
   }) {
     try {
-      const handles = new Handles({suite});
+      const handles = new Handles({suite})
 
-      script(handles);
+      script(handles)
     }
     catch (err) {
-      reporter.reportBrokenScript(err);
-      return suite;
+      reporter.reportBrokenScript(err)
+      return suite
     }
 
-    const stack = [];
+    const stack = []
 
     try {
       await runSuite({
         stack,
         unit: suite,
-        ctx: context,
+        ctx: createContext(context, {timeout}),
         reporter,
-      });
+      })
     }
     catch (err) {
       if (err instanceof UnitError) {
-        reporter.reportBrokenUnit(stack[stack.length - 1], err.origin);
+        reporter.reportBrokenUnit(stack[stack.length - 1], err.origin)
       }
       else if (err instanceof RuntimeError) {
         if (reportErrors) {
-          reporter.reportError(err.origin);
+          reporter.reportError(err.origin)
         }
         else {
-          throw err.origin;
+          throw err.origin
         }
       }
       else {
         if (reportErrors) {
-          reporter.reportError(err);
+          reporter.reportError(err)
         }
         else {
-          throw err;
+          throw err
         }
       }
     }
 
-    return suite;
+    return suite
   }
 
   async function runSuite({stack, unit, ctx, reporter}) {
-    stack.push(unit);
-    reporter.startSuite(unit);
+    stack.push(unit)
+    reporter.startSuite(unit)
 
-    const nest = createNested(unit.modifier);
+    const nest = createNested(unit.modifier)
 
     try {
       await nest(ctx, async (subCtx) => {
@@ -81,7 +90,7 @@
               unit: subUnit,
               ctx: subCtx,
               reporter,
-            });
+            })
           }
           else {
             await runSuite({
@@ -89,139 +98,166 @@
               unit: subUnit,
               ctx: subCtx,
               reporter,
-            });
+            })
           }
         }
-      });
+      })
     }
     catch (err) {
       if (err instanceof UnitError || err instanceof RuntimeError) {
-        throw err;
+        throw err
       }
       else {
-        throw new RuntimeError(err);
+        throw new RuntimeError(err)
       }
     }
 
-    unit.end();
-    reporter.endSuite(unit);
+    unit.end()
+    reporter.endSuite(unit)
 
-    stack.pop();
+    stack.pop()
   }
 
   async function runCase({stack, unit, ctx, reporter}) {
-    stack.push(unit);
-    reporter.startCase(unit);
+    stack.push(unit)
+    reporter.startCase(unit)
 
-    const nest = createNested(unit.modifier);
+    const nest = createNested(unit.modifier)
     try {
       await nest(ctx, async (subCtx) => {
         try {
-          await unit.handler(subCtx);
-          unit.end();
+          let intervalId
+          const limit = subCtx[TIMEOUT]
+          let endsAt = Date.now() + limit + 100
+          const test = new Test({
+            onDelay(timeout) {
+              endsAt += timeout
+            },
+          })
+
+          await new Promise((resolve, reject) => {
+            Promise.resolve(unit.handler(test, subCtx))
+            .then(resolve, reject)
+
+            intervalId = setInterval(() => {
+              if (Date.now() > endsAt) {
+                reject(new Error(`Limit in ${limit} ms exceeded`))
+              }
+            }, 100)
+          })
+          .finally(() => {
+            clearInterval(intervalId)
+          })
+
+          if (! test.isEnded) {
+            unit.end(new Error('Not ended'))
+          }
+          else {
+            unit.end()
+          }
         }
         catch (err) {
-          unit.end(err);
+          unit.end(err)
         }
-      });
+      })
     }
     catch (err) {
-      throw new UnitError(err);
+      throw new UnitError(err)
     }
 
-    reporter.endCase(unit);
-    stack.pop();
+    reporter.endCase(unit)
+    stack.pop()
   }
 
   class UnitError extends Error {
     constructor(origin) {
-      super('Unit error');
+      super('Unit error')
 
-      this.origin = origin;
+      this.origin = origin
     }
   }
 
   class RuntimeError extends Error {
     constructor(origin) {
-      super('Unit error');
+      super('Unit error')
 
-      this.origin = origin;
+      this.origin = origin
     }
   }
 
   function createNested(stack) {
     if (! stack.length) {
-      return (ctx, next) => next(ctx);
+      return (ctx, next) => next(ctx)
     }
 
     return (ctx, next) => {
-      const [head, ...tail] = stack;
+      const [head, ...tail] = stack
 
       return head(ctx, (subCtx) => {
-        if (subCtx === undefined) {
-          subCtx = ctx;
+        if (subCtx === void 0) {
+          subCtx = ctx
         }
         else if (typeof subCtx !== 'object' || subCtx.constructor !== Object) {
-          throw new Error('Context should be instance of Object');
+          throw new Error('Context should be instance of Object')
         }
         else {
-          Object.freeze(subCtx);
+          Object.freeze(subCtx)
         }
 
         if (tail.length !== 0) {
-          return createNested(tail)(subCtx, next);
+          return createNested(tail)(subCtx, next)
         }
         else {
-          return next(subCtx);
+          return next(subCtx)
         }
-      });
-    };
+      })
+    }
   }
 
   class Handles {
     constructor({suite}) {
-      this.stack = [suite];
-      this.batchModifiers = [];
+      this.stack = [suite]
+      this.batchModifiers = []
 
       this.describe = (label, handler) => {
         if (typeof handler !== 'function') {
-          throw new Error('Handler is not a function');
+          throw new Error('Handler is not a function')
         }
 
-        const {parent, stack} = this;
+        const {parent, stack} = this
 
         const next = new Suite({
           label,
           parent,
           modifier: getLast(this.batchModifiers),
-        });
-        parent.push(next);
-        stack.push(next);
-        handler(this);
-        stack.pop();
-      };
+        })
+        parent.push(next)
+        stack.push(next)
+        handler(this)
+        stack.pop()
+      }
 
       this.use = (handler) => {
         if (typeof handler !== 'function') {
-          throw new Error('Handler is not a function');
+          throw new Error('Handler is not a function')
         }
 
-        this.parent.addWrapper(handler);
-      };
+        this.parent.addWrapper(handler)
+      }
 
       this.it = (label, ...modifier) => {
         if (modifier.length === 0) {
-          throw new Error('No handler is defined');
+          throw new Error('No handler is defined')
         }
 
         for (const i in modifier) {
           if (typeof modifier[i] !== 'function') {
-            throw new Error(`Argument #${i + 2} is not a function`);
+            throw new Error(`Argument #${i + 2} is not a function`)
           }
         }
 
-        const handler = modifier.pop();
-        const {parent} = this;
+        const handler = modifier.pop()
+        const {parent} = this
         parent.push(
           new Case({
             label,
@@ -232,85 +268,85 @@
             ],
             handler,
           })
-        );
-      };
+        )
+      }
 
       this.each = (...handlers) => {
-        const fn = handlers.pop();
+        const fn = handlers.pop()
 
-        this.batchModifiers.push(handlers);
-        fn(this);
-        this.batchModifiers.pop();
-      };
+        this.batchModifiers.push(handlers)
+        fn(this)
+        this.batchModifiers.pop()
+      }
 
-      Object.freeze(this);
+      Object.freeze(this)
     }
 
     get parent() {
-      return this.stack[this.stack.length - 1];
+      return this.stack[this.stack.length - 1]
     }
   }
 
   function getLast(array) {
-    return array.length === 0 ? [] : array[array.length - 1];
+    return array.length === 0 ? [] : array[array.length - 1]
   }
 
   class Unit {
     constructor({parent}) {
-      this.parent = parent;
+      this.parent = parent
 
-      this.isCompleted = false;
-      this.error = null;
+      this.isCompleted = false
+      this.error = null
     }
 
     get type() {
-      throw new Error('Not implemented');
+      throw new Error('Not implemented')
     }
 
     get isOk() {
-      throw new Error('No implemented');
+      throw new Error('No implemented')
     }
 
     get path() {
-      return [...this.parent.path];
+      return [...this.parent.path]
     }
 
     get root() {
-      let parent = this;
+      let parent = this
       while (parent.parent) {
-        parent = parent.parent;
+        parent = parent.parent
       }
-      return parent;
+      return parent
     }
 
     get depth() {
-      let parent = this;
-      let depth = 0;
+      let parent = this
+      let depth = 0
       while (parent.parent) {
-        parent = parent.parent;
-        depth += 1;
+        parent = parent.parent
+        depth += 1
       }
-      return depth;
+      return depth
     }
 
     get parents() {
-      let parent = this;
-      let parents = [];
+      let parent = this
+      let parents = []
       while (parent.parent) {
-        parent = parent.parent;
-        parents.push(parent);
+        parent = parent.parent
+        parents.push(parent)
       }
-      return parents;
+      return parents
     }
 
     start() {}
 
     end() {
       if (this.isCompleted) {
-        throw new Error('Already completed');
+        throw new Error('Already completed')
       }
 
-      this.isCompleted = true;
+      this.isCompleted = true
     }
   }
 
@@ -324,94 +360,94 @@
       super({
         parent,
         handle: null,
-      });
-      this.label = label;
-      this.total = 0;
-      this.passed = 0;
-      this.failed = 0;
-      this._modifier = modifier;
-      this._units = units;
-      this.hasUnit = false;
+      })
+      this.label = label
+      this.total = 0
+      this.passed = 0
+      this.failed = 0
+      this._modifier = modifier
+      this._units = units
+      this.hasUnit = false
     }
 
     get type() {
-      return 'section';
+      return 'section'
     }
 
     get path() {
       if (this.parent !== null) {
-        return [...this.parent.path, this.label];
+        return [...this.parent.path, this.label]
       }
       else {
-        return [];
+        return []
       }
     }
 
     get isOk() {
-      return this.isCompleted && this.passed === this.total;
+      return this.isCompleted && this.passed === this.total
     }
 
     get isRoot() {
-      return this.parent === null;
+      return this.parent === null
     }
 
     get units() {
-      return [...this._units];
+      return [...this._units]
     }
 
     get modifier() {
-      return [...this._modifier];
+      return [...this._modifier]
     }
 
     addWrapper(wrapper) {
       if (this.hasUnit) {
-        throw new Error('Cases or sections already defined');
+        throw new Error('Cases or sections already defined')
       }
 
-      this._modifier.push(wrapper);
+      this._modifier.push(wrapper)
     }
 
     push(unit) {
       if (! (unit instanceof Unit)) {
-        throw new Error('Not a Unit');
+        throw new Error('Not a Unit')
       }
 
-      this.hasUnit = true;
-      this._units.push(unit);
+      this.hasUnit = true
+      this._units.push(unit)
 
       if (unit.type === 'case') {
-        this.increaseTotal();
+        this.increaseTotal()
       }
     }
 
     increaseTotal() {
-      this.total += 1;
+      this.total += 1
       if (this.parent) {
-        this.parent.increaseTotal();
+        this.parent.increaseTotal()
       }
     }
 
     increasePassed() {
-      this.beforeIncrease();
+      this.beforeIncrease()
 
-      this.passed += 1;
+      this.passed += 1
       if (this.parent) {
-        this.parent.increasePassed();
+        this.parent.increasePassed()
       }
     }
 
     increaseFailed() {
-      this.beforeIncrease();
+      this.beforeIncrease()
 
-      this.failed += 1;
+      this.failed += 1
       if (this.parent) {
-        this.parent.increaseFailed();
+        this.parent.increaseFailed()
       }
     }
 
     beforeIncrease() {
       if (this.passed + this.failed >= this.total) {
-        throw new Error('Invalid tests count');
+        throw new Error('Invalid tests count')
       }
     }
   }
@@ -420,38 +456,59 @@
     constructor({label, parent, modifier, handler}) {
       super({
         parent,
-      });
+      })
 
-      this.label = label;
-      this.modifier = modifier;
-      this.handler = handler;
-      this.index = parent.total + 1;
-      this.error = null;
+      this.label = label
+      this.modifier = modifier
+      this.handler = handler
+      this.index = parent.total + 1
+      this.error = null
     }
 
     get type() {
-      return 'case';
+      return 'case'
     }
 
     get isOk() {
-      return this.isCompleted && this.error === null;
+      return this.isCompleted && this.error === null
     }
 
     end(error) {
-      super.end();
+      super.end()
 
       if (! error) {
-        this.parent.increasePassed();
+        this.parent.increasePassed()
       }
       else {
-        this.parent.increaseFailed();
-        this.error = error;
+        this.parent.increaseFailed()
+        this.error = error
       }
     }
   }
 
-  exports.runScript = runScript;
-  exports.Unit = Unit;
-  exports.Suite = Suite;
-  exports.Case = Case;
-});
+  class Test {
+    constructor({onDelay}) {
+      this._onDelay = onDelay
+      this._isEnded = false
+    }
+
+    get isEnded() {
+      return this._isEnded
+    }
+
+    async delay(delay) {
+      this._onDelay(delay)
+      await new Promise((resolve) => setTimeout(resolve, delay))
+    }
+
+    done() {
+      this._isEnded = true
+    }
+  }
+
+  exports.runScript = runScript
+  exports.Unit = Unit
+  exports.Suite = Suite
+  exports.Case = Case
+  exports.TIMEOUT = TIMEOUT
+})
