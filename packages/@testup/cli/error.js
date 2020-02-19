@@ -1,1 +1,1 @@
-module.exports = class CommandError extends Error {};
+module.exports = class CommandError extends Error {}

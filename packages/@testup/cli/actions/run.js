@@ -1,129 +1,147 @@
-const fs = require('fs');
-const path = require('path');
-const {promisify} = require('util');
+const fs = require('fs')
+const path = require('path')
+const {promisify} = require('util')
 
-const CmdError = require('../error');
+const CmdError = require('../error')
 
-const readFile = promisify(fs.readFile);
-const exists = promisify(fs.exists);
+const fsReadFile = promisify(fs.readFile)
+const fsExists = promisify(fs.exists)
 
-const OK = 0;
-const FAIL = 1;
+const OK = 0
+const FAIL = 1
 
 async function loadJson(filepath) {
 
-  const content = await readFile(filepath, 'utf8');
+  const content = await fsReadFile(filepath, 'utf8')
 
   try {
-    return JSON.parse(content);
+    return JSON.parse(content)
   }
   catch (err) {
-    throw new Error('Invalid JSON');
+    throw new Error('Invalid JSON')
   }
 }
 
 async function loadReporter(name, opts, config) {
-  let reporterModule;
+  let search
   if (/^(\.{0,2})\//.test(name)) {
-    reporterModule = path.resolve(`${name}/create`);
+    search = [
+      `${name}/create.js`,
+      `${name}/create.mjs`,
+    ]
+  }
+  else if (name) {
+    search = [
+      `node_modules/@testup/${name}-reporter/create.js`,
+      `node_modules/@testup/${name}-reporter/create.mjs`,
+    ]
   }
   else {
-    reporterModule = `@testup/${name}-reporter/create`;
+    search = [
+      'node_modules/@testup/console-reporter/create.js',
+      'node_modules/@testup/console-reporter/create.mjs',
+    ]
   }
 
-  const createReporter = require(reporterModule);
+  const reporterModule = await lookup(opts.dir, search)
 
-  return createReporter(opts, config.reporter || {});
+  if (reporterModule === null) {
+    throw new Error('Reporter module not specified and not found')
+  }
+
+  const createReporter = require(reporterModule)
+
+  return createReporter(opts, config.reporter || {})
 }
 
 async function lookup(dir, files) {
-  const parts = dir.split(path.SEP);
+  const parts = dir.split(path.SEP)
   if (! Array.isArray(files)) {
-    files = [files];
+    files = [files]
   }
 
   while (parts.length) {
     for (const file of files) {
-      const filepath = path.join(...parts, file);
-      if (await exists(filepath)) {
-        return filepath;
+      const filepath = path.join(...parts, file)
+      if (await fsExists(filepath)) {
+        return filepath
       }
     }
-    parts.pop();
+    parts.pop()
   }
 }
 
 async function testAction(opts) {
-  let testup;
+  let testup
 
   if (opts.package) {
-    testup = path.resolve(opts.package);
+    testup = await path.resolve(opts.dir, opts.package)
 
-    if (! await exists(testup)) {
-      throw new CmdError(`TestUp Core package not found at "${testup}"`);
+    if (! await fsExists(testup)) {
+      throw new CmdError(`TestUp Core package not found at "${opts.package}"`)
     }
   }
   else {
     testup = await lookup(
       opts.dir,
       path.join('node_modules', '@testup', 'core'),
-    );
+    )
 
     if (! testup) {
-      throw new CmdError('TestUp Core package not found');
+      throw new CmdError('TestUp Core package not found')
     }
   }
 
   const {
     runScript,
     Suite,
-  } = require(testup);
+  } = require(testup)
 
-  const {dir, files} = opts;
+  const {dir, files} = opts
 
-  let config = {};
+  let config = {}
   if (opts.config) {
-    if (! await exists(opts.config)) {
-      throw new CmdError(`Config file "${opts.config}" not found`);
+    if (! await fsExists(opts.config)) {
+      throw new CmdError(`Config file "${opts.config}" not found`)
     }
-    config = await loadJson(opts.config);
+    config = await loadJson(opts.config)
   }
   else {
-    const configPath = path.resolve(dir, '.testuprc');
-    if (await exists(configPath)) {
-      config = await loadJson(configPath);
+    const configPath = path.resolve(dir, '.testuprc')
+    if (await fsExists(configPath)) {
+      config = await loadJson(configPath)
     }
   }
 
-  const suites = [];
+  const suites = []
 
   for (const file of files) {
     const reporter = await loadReporter(
       opts.reporter || config.reporter,
       opts,
       config,
-    );
+    )
 
     const suite = new Suite({
       label: `File: ${file}`,
-    });
-    suites.push(suite);
+    })
+    suites.push(suite)
 
     if (! file) {
-      throw new CmdError('Test file not specified');
+      throw new CmdError('Test file not specified')
     }
-    else if (! await exists(file)) {
-      throw new CmdError('Test file not found');
+    else if (! await fsExists(file)) {
+      throw new CmdError('Test file not found')
     }
 
-    let script = require(path.resolve(file));
+    let script = require(path.resolve(file))
 
     if (typeof script === 'object' && typeof script.default === 'function') {
-      script = script.default;
+      script = script.default
     }
 
     if (typeof script !== 'function') {
-      throw new CmdError(`Test "${file}" exports no function`);
+      throw new CmdError(`Test "${file}" exports no function`)
     }
 
     await runScript({
@@ -131,10 +149,10 @@ async function testAction(opts) {
       reporter,
       suite,
       reportErrors: true,
-    });
+    })
   }
 
-  return suites.some((suite) => !suite.isOk) ? FAIL : OK;
+  return suites.some((suite) => !suite.isOk) ? FAIL : OK
 }
 
-module.exports = testAction;
+module.exports = testAction
