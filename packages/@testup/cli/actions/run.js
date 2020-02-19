@@ -40,6 +40,8 @@ async function loadReporter(name, opts, config) {
     search = [
       'node_modules/@testup/console-reporter/create.js',
       'node_modules/@testup/console-reporter/create.mjs',
+      'node_modules/@testup/tap-reporter/create.js',
+      'node_modules/@testup/tap-reporter/create.mjs',
     ]
   }
 
