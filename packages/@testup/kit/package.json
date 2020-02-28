@@ -1,0 +1,27 @@
+{
+  "name": "@testup/kit",
+  "version": "0.1.0",
+  "description": "TestUp helpers kit",
+  "main": "index.js",
+  "dependencies": {},
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rumkin/testup.git"
+  },
+  "keywords": [
+    "testup",
+    "utils",
+    "kit",
+    "helpers"
+  ],
+  "author": "Rumkin <dev@rumk.in> (https://rumk.in/)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/rumkin/testup/issues"
+  },
+  "homepage": "https://github.com/rumkin/testup/tree/master/packages/@testup/kit#readme"
+}
