@@ -1,5 +1,7 @@
 # TestUp Console Reporter
 
+> Part of the [TestUp](https://github.com/testup) test running suite.
+
 Basic TestUp reporter. Output mocha-alike reports to console.
 
 ## Install
@@ -8,9 +10,29 @@ Basic TestUp reporter. Output mocha-alike reports to console.
 npm i @testup/console-report
 ```
 
-## Config
+## Options
 
-No config options.
+### `indent`
+
+```
+string = '  '
+```
+
+Indentation string.
+
+### `successMark`
+```
+string = ''
+```
+
+Succeeded test marker.
+
+### `failureMark`
+```
+string = ''
+```
+
+Failed test marker.
 
 ## License
 

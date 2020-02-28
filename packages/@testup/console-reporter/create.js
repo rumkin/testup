@@ -1,5 +1,13 @@
-const Reporter = require('./console-reporter');
+const Reporter = require('./console-reporter')
 
-module.exports = function() {
-  return new Reporter();
-};
+module.exports = function(opts, {
+  indent,
+  successMark,
+  failureMark,
+} = {}) {
+  return new Reporter({
+    indent,
+    successMark,
+    failureMark,
+  })
+}
