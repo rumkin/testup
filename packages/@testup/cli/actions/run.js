@@ -26,22 +26,19 @@ async function loadReporter(name, opts, config) {
   let search
   if (/^(\.{0,2})\//.test(name)) {
     search = [
+      `${name}`,
       `${name}/create.js`,
-      `${name}/create.mjs`,
     ]
   }
   else if (name) {
     search = [
       `node_modules/@testup/${name}-reporter/create.js`,
-      `node_modules/@testup/${name}-reporter/create.mjs`,
     ]
   }
   else {
     search = [
       'node_modules/@testup/console-reporter/create.js',
-      'node_modules/@testup/console-reporter/create.mjs',
       'node_modules/@testup/tap-reporter/create.js',
-      'node_modules/@testup/tap-reporter/create.mjs',
     ]
   }
 
@@ -53,7 +50,7 @@ async function loadReporter(name, opts, config) {
 
   const createReporter = require(reporterModule)
 
-  return createReporter(opts, config.reporter || {})
+  return createReporter(opts, config)
 }
 
 async function lookup(dir, files) {
@@ -120,8 +117,8 @@ async function testAction(opts) {
   for (const file of files) {
     const reporter = await loadReporter(
       opts.reporter || config.reporter,
-      opts,
-      config,
+      {dir, files},
+      config.reporterOptions || {},
     )
 
     const suite = new Suite({

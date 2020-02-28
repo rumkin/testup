@@ -23,8 +23,9 @@ Create `.testuprc` file:
 ```
 {
   "reporter": "console"
-  "reporterConfig": {
-    "colorize": false
+  "reporterOptions": {
+    "successMark": "+",
+    "failureMark": "-"
   }
 }
 ```
@@ -32,7 +33,7 @@ Create `.testuprc` file:
 Add npm script:
 ```json
 {
-  "scripts": "testup run -r console test.spec.js"
+  "scripts": "testup run test.spec.js"
 }
 ```
 
