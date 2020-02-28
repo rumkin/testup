@@ -1,11 +1,11 @@
 {
+  "name": "@testup/tap-reporter",
+  "version": "0.1.1",
+  "description": "TestUp TAP (Test Anything Protocol) reporter",
   "main": "tap-reporter.js",
   "dependencies": {
     "chalk": "^2.4.1"
   },
-  "name": "@testup/tap-reporter",
-  "version": "0.1.0",
-  "description": "TestUp TAP (Test Anything Protocol) reporter",
   "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
