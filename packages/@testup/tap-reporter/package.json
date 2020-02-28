@@ -20,6 +20,9 @@
     "reporter",
     "tap-reporter"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "author": "Rumkin <dev@rumk.in> (https://rumk.in/)",
   "license": "MIT",
   "bugs": {
