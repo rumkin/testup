@@ -50,6 +50,7 @@ export default ({describe, it}) => {
 
     it('Answer is 42', (test, {answer}) => {
       assert.equal(42, answer)
+
       test.end()
     })
   })
@@ -67,8 +68,8 @@ export default ({describe, it}) => {
 
 ### `describe()`
 ```ts
-interface Describe {
-  (label: String, ...modifiers: Modifier, handler: Script): void
+interface DescribeFn {
+  (label: string, handler: ScriptFn): void
 }
 ```
 
@@ -87,8 +88,8 @@ describe('Array', () => {
 
 ### `it()`
 ```ts
-interface It {
-  (label: string, ...modifiers: Modifier, test: Test): void
+interface ItFn {
+  (label: string, ...modifiers: ModifierFn, test: TestCaseFn): void
 }
 ```
 
@@ -104,8 +105,8 @@ it('The Answer should be 42', (test) => {
 ### `use()`
 
 ```ts
-interface Use {
-  (modifier: Modifier): void
+interface UseFn {
+  (modifier: ModifierFn): void
 }
 ```
 
@@ -141,8 +142,8 @@ describe('database', () => {
 ### `each()`
 
 ```ts
-interface Each {
-  (...modifiers: Modifier, handler: Script): void
+interface EachFn {
+  (modifiers: ModifierFn): void
 }
 ```
 
@@ -170,10 +171,20 @@ describe('Group', () => {
 
 ## Types
 
-### `Test()`
+### `Test`
 ```ts
 interface Test {
-  (context: Object): void
+  delay(timeout: number): Promise<void>
+  end():void
+}
+```
+
+Test has single method `end` which tells that test script reached the end.
+
+### `TestCaseFn()`
+```ts
+interface TestCaseFn {
+  (context: Object, test: Test): void
 }
 ```
 
@@ -181,9 +192,9 @@ The last argument of `it` function. It contains test body and should throw
 assert exceptions. It accepts `context` argument which contains values
 defined by modifiers from higher levels of test script.
 
-### `Modifier()`
+### `ModifierFn()`
 ```ts
-interface Modifier {
+interface ModifierFn {
   (context: Object, next: () => Promise<void>): void|Promise<void>
 }
 ```
@@ -191,10 +202,10 @@ interface Modifier {
 Modifier is a function that modify context somehow before pass it to lower
 levels of test script.
 
-### `Script()`
+### `ScriptFn()`
 ```ts
-interface Script {
-  (handlers: {describe:Describe, use:Use, it:It, each:Each}): void
+interface ScriptFn {
+  (handlers: {describe:DescribeFn, use:UseFn, it:ItFn, each:EachFn}): void
 }
 ```
 
