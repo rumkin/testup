@@ -1,10 +1,11 @@
 {
   "name": "testup",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Default testup test tools installation",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "upgrade": "npm i @testup/cli@latest @testup/core@latest @testup/console-reporter@latest"
   },
   "bin": {
     "testup": "node_modules/@testup/cli/bin.js"
@@ -14,9 +15,9 @@
     "url": "git+https://github.com/rumkin/testup.git"
   },
   "dependencies": {
-    "@testup/core": "^1.0.0",
-    "@testup/cli": "^0.5.0",
-    "@testup/console-reporter": "^0.1.1"
+    "@testup/cli": "^0.6.0",
+    "@testup/console-reporter": "^0.2.0",
+    "@testup/core": "^2.0.0"
   },
   "keywords": [
     "testup",
