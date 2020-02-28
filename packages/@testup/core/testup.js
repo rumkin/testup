@@ -128,7 +128,8 @@
         try {
           let intervalId
           const limit = subCtx[TIMEOUT]
-          let endsAt = Date.now() + limit + 100
+          const interval = 100
+          let endsAt = Date.now() + limit + interval
           const test = new Test({
             onDelay(timeout) {
               endsAt += timeout
@@ -143,7 +144,7 @@
               if (Date.now() > endsAt) {
                 reject(new Error(`Limit in ${limit} ms exceeded`))
               }
-            }, 100)
+            }, interval)
           })
           .finally(() => {
             clearInterval(intervalId)
@@ -238,6 +239,10 @@
       }
 
       this.use = (handler) => {
+        if (this.parent.hasEachModifiers === true) {
+          throw new Error('Calling use() after each() call is not allowed')
+        }
+
         if (typeof handler !== 'function') {
           throw new Error('Handler is not a function')
         }
@@ -271,12 +276,21 @@
         )
       }
 
-      this.each = (...handlers) => {
-        const fn = handlers.pop()
+      this.each = (handlers, fn) => {
+        if (! Array.isArray(handlers)) {
+          handlers = [handlers]
+        }
 
-        this.batchModifiers.push(handlers)
-        fn(this)
-        this.batchModifiers.pop()
+        this.parent.hasEachModifiers = true
+
+        if (fn) {
+          this.batchModifiers.push(handlers)
+          fn(this)
+          this.batchModifiers.pop()
+        }
+        else {
+          this.batchModifiers.push(handlers)
+        }
       }
 
       Object.freeze(this)
@@ -502,6 +516,10 @@
     }
 
     done() {
+      return this._end()
+    }
+
+    end() {
       this._isEnded = true
     }
   }

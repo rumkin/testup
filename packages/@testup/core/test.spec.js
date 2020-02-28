@@ -129,7 +129,7 @@ async function runTests() {
   await testScript(({it}) => {
     it('Should be fine', (test) => {
       assert.equal(42, 42, '42 equals 42')
-      test.done()
+      test.end()
     })
   })
   .then(res => pipe(res,
@@ -139,7 +139,7 @@ async function runTests() {
   ))
 
   await testScript(({it}) => {
-    it('Should fail without test.done() call', () => {})
+    it('Should fail without test.end() call', () => {})
   })
   .then(res => pipe(res,
     hasNoAnyErrors,
@@ -162,8 +162,8 @@ async function runTests() {
     it('Should delay timeout', timeout(100), async (test) => {
       const start = Date.now()
       await test.delay(100)
-      assert.ok(Date.now() - start > 100, 'Wait at least 100ms')
-      test.done()
+      assert.ok(Date.now() - start >= 100, 'Wait at least 100ms')
+      test.end()
     })
   })
   .then(res => pipe(res,
@@ -179,15 +179,15 @@ async function runTests() {
       it('Timeout 1', async (test) => {
         const start = Date.now()
         await test.delay(100)
-        assert.ok(Date.now() - start > 100, 'Wait at least 100ms #1')
-        test.done()
+        assert.ok(Date.now() - start >= 100, 'Wait at least 100ms #1')
+        test.end()
       })
 
       it('Timeout 2', async (test) => {
         const start = Date.now()
         await test.delay(100)
-        assert.ok(Date.now() - start > 100, 'Wait at least 100ms #2')
-        test.done()
+        assert.ok(Date.now() - start >= 100, 'Wait at least 100ms #2')
+        test.end()
       })
     })
   })
@@ -201,7 +201,7 @@ async function runTests() {
     describe('Nested', () => {
       it('Should be fine', (test) => {
         assert.equal(42, 42, '42 equals 42')
-        test.done()
+        test.end()
       })
     })
   })
@@ -219,7 +219,7 @@ async function runTests() {
       describe('Deeply nested sections', () => {
         it('Should be fine', (test) => {
           assert.equal(42, 42, '42 equals 42')
-          test.done()
+          test.end()
         })
       })
     })
@@ -241,7 +241,7 @@ async function runTests() {
 
       it('Should be fine', (test, {n}) => {
         assert.equal(n, 42, '42 equals 42')
-        test.done()
+        test.end()
       })
     })
   })
@@ -263,12 +263,12 @@ async function runTests() {
         () => {
           it('Should be fine', (test, {n}) => {
             assert.equal(n, 42, '1) 42 equals 42')
-            test.done()
+            test.end()
           })
 
           it('Should be fine', (test, {n}) => {
             assert.equal(n, 42, '2) 42 equals 42')
-            test.done()
+            test.end()
           })
         }
       )
@@ -283,13 +283,26 @@ async function runTests() {
     testsFailed(0),
   ))
 
-  await testScript({n: 42}, ({describe, each, it}) => {
-    describe('Using root context', () => {
+  await testScript(({describe, each, it}) => {
+    describe('Using batch context', () => {
       each(
+        [
+          async (ctx, next) => {
+            await next({n: 40})
+          },
+          async (ctx, next) => {
+            await next({n: ctx.n + 2})
+          },
+        ],
         () => {
           it('Should be fine', (test, {n}) => {
-            assert.equal(n, 42, '42 equals 42')
-            test.done()
+            assert.equal(n, 42, '1) 42 equals 42')
+            test.end()
+          })
+
+          it('Should be fine', (test, {n}) => {
+            assert.equal(n, 42, '2) 42 equals 42')
+            test.end()
           })
         }
       )
@@ -299,8 +312,48 @@ async function runTests() {
     shouldBeCompleted,
     shouldBeOk,
     hasNoAnyErrors,
-    testsTotal(1),
-    testsPassed(1),
+    testsTotal(2),
+    testsPassed(2),
+    testsFailed(0),
+  ))
+
+  await testScript(({use, each}) => {
+    each(() => {})
+    use(() => {})
+  })
+  .then(res => pipe(res,
+    shouldBeNotCompleted,
+    shouldBeNotOk,
+    hasNoUnitErrors,
+    onScriptErrors(([error]) => assert.ok(/use\(\) after each\(\)/.test(error.message), 'Failed due to misconfigure')),
+    testsTotal(0),
+    testsPassed(0),
+    testsFailed(0),
+  ))
+
+  await testScript({n: 42}, ({describe, each, it}) => {
+    describe('Using root context', () => {
+      each((ctx, next) => {
+        return next({n: 42})
+      })
+
+      it('Should be fine', (test, {n}) => {
+        assert.equal(n, 42, '42 equals 42')
+        test.end()
+      })
+
+      it('Should be fine too', (test, {n}) => {
+        assert.equal(n, 42, '42 equals 42 too')
+        test.end()
+      })
+    })
+  })
+  .then(res => pipe(res,
+    shouldBeCompleted,
+    shouldBeOk,
+    hasNoAnyErrors,
+    testsTotal(2),
+    testsPassed(2),
     testsFailed(0),
   ))
 
