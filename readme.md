@@ -63,6 +63,7 @@ export default ({describe, it}) => {
 * [`@testup/cli`](packages/@testup/cli) – TestUp Cli running tool.
 * [`@testup/console-reporter`](packages/@testup/console-reporter) – Unified console test reporter.
 * [`@testup/tap-reporter`](packages/@testup/tap-reporter) – TAP reporter.
+* [`@testup/kit`](packages/@testup/kit) – TestUp helpers kit.
 
 ## API
 
